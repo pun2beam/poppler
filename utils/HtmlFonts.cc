@@ -228,6 +228,7 @@ GooString *HtmlFont::HtmlFilter(const Unicode *u, int uLen)
 {
     GooString *tmp = new GooString();
     const UnicodeMap *uMap;
+    const std::string unmappedMarker = globalParams->getTextUnmappedMarker();
     char buf[8];
     int n;
 
@@ -263,6 +264,8 @@ GooString *HtmlFont::HtmlFilter(const Unicode *u, int uLen)
             // convert unicode to string
             if ((n = uMap->mapUnicode(u[i], buf, sizeof(buf))) > 0) {
                 tmp->append(buf, n);
+            } else if (!unmappedMarker.empty()) {
+                tmp->append(unmappedMarker);
             }
         }
         }

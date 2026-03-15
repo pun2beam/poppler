@@ -124,6 +124,7 @@ extern double wordBreakThreshold;
 
 static bool debug = false;
 static GooString *gstr_buff0 = nullptr; // a workspace in which I format strings
+constexpr Unicode textUnmappedSentinel = 0x110000;
 
 #if 0
 static GooString* Dirname(GooString* str){
@@ -399,9 +400,14 @@ void HtmlPage::addChar(GfxState *state, double x, double y, double dx, double dy
     if (uLen != 0) {
         w1 /= uLen;
         h1 /= uLen;
-    }
-    for (i = 0; i < uLen; ++i) {
-        curStr->addChar(state, x1 + i * w1, y1 + i * h1, w1, h1, u[i]);
+        for (i = 0; i < uLen; ++i) {
+            curStr->addChar(state, x1 + i * w1, y1 + i * h1, w1, h1, u[i]);
+        }
+    } else {
+        // Some glyphs (e.g. Type3/F3-like vector glyphs) have drawing
+        // commands but no text codepoint mapping. Keep a placeholder so
+        // pdftohtml -missing can mark their position in output.
+        curStr->addChar(state, x1, y1, w1, h1, textUnmappedSentinel);
     }
 }
 

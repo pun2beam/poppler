@@ -99,6 +99,7 @@ bool fontFullName = false;
 static char ownerPassword[33] = "";
 static char userPassword[33] = "";
 static bool printVersion = false;
+static char missingMarker[128] = "";
 
 static GooString *getInfoString(Dict *infoDict, const char *key);
 static GooString *getInfoDate(Dict *infoDict, const char *key);
@@ -129,6 +130,7 @@ static const ArgDesc argDesc[] = { { "-f", argInt, &firstPage, 0, "first page to
                                    { "-hidden", argFlag, &showHidden, 0, "output hidden text" },
                                    { "-nomerge", argFlag, &noMerge, 0, "do not merge paragraphs" },
                                    { "-enc", argString, textEncName, sizeof(textEncName), "output text encoding name" },
+                                   { "-missing", argString, missingMarker, sizeof(missingMarker), "marker to output for characters that cannot be converted" },
                                    { "-fmt", argString, extension, sizeof(extension), "image file format for Splash output (png or jpg)" },
                                    { "-v", argFlag, &printVersion, 0, "print copyright and version info" },
                                    { "-opw", argString, ownerPassword, sizeof(ownerPassword), "owner password (for encrypted files)" },
@@ -206,6 +208,8 @@ int main(int argc, char *argv[])
             goto error;
         }
     }
+
+    globalParams->setTextUnmappedMarker(missingMarker);
 
     // convert from user-friendly percents into a coefficient
     wordBreakThreshold /= 100.0;
