@@ -392,6 +392,7 @@ GlobalParams::GlobalParams(const char *customPopplerDataDir) : popplerDataDir(cu
     psExpandSmaller = false;
     psShrinkLarger = true;
     textEncoding = new GooString("UTF-8");
+    textUnmappedMarker.clear();
     overprintPreview = false;
     printCommands = false;
     profileCommands = false;
@@ -1138,6 +1139,12 @@ std::string GlobalParams::getTextEncodingName() const
     return textEncoding->toStr();
 }
 
+std::string GlobalParams::getTextUnmappedMarker() const
+{
+    globalParamsLocker();
+    return textUnmappedMarker;
+}
+
 const UnicodeMap *GlobalParams::getUtf8Map()
 {
     if (!utf8Map) {
@@ -1245,6 +1252,12 @@ void GlobalParams::setTextEncoding(const char *encodingName)
     globalParamsLocker();
     delete textEncoding;
     textEncoding = new GooString(encodingName);
+}
+
+void GlobalParams::setTextUnmappedMarker(const std::string &marker)
+{
+    globalParamsLocker();
+    textUnmappedMarker = marker;
 }
 
 void GlobalParams::setOverprintPreview(bool overprintPreviewA)

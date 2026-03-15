@@ -58,6 +58,7 @@
 #include <cfloat>
 #include <cctype>
 #include <algorithm>
+#include <string>
 #ifdef _WIN32
 #    include <fcntl.h> // for O_BINARY
 #    include <io.h> // for setmode
@@ -196,7 +197,7 @@ inline bool isAscii7(Unicode uchar)
 
 }
 
-static int reorderText(const Unicode *text, int len, const UnicodeMap *uMap, bool primaryLR, GooString *s, Unicode *u)
+static int reorderText(const Unicode *text, int len, const UnicodeMap *uMap, bool primaryLR, GooString *s, Unicode *u, const std::string *unmappedMarker = nullptr)
 {
     char lre[8], rle[8], popdf[8], buf[8];
     int lreLen = 0, rleLen = 0, popdfLen = 0, n;
@@ -219,7 +220,11 @@ static int reorderText(const Unicode *text, int len, const UnicodeMap *uMap, boo
             for (k = i; k < j; ++k) {
                 if (s) {
                     n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-                    s->append(buf, n);
+                    if (n <= 0 && unmappedMarker && !unmappedMarker->empty()) {
+                        s->append(*unmappedMarker);
+                    } else {
+                        s->append(buf, n);
+                    }
                 }
                 if (u)
                     u[nCols] = text[k];
@@ -235,7 +240,11 @@ static int reorderText(const Unicode *text, int len, const UnicodeMap *uMap, boo
                 for (k = j - 1; k >= i; --k) {
                     if (s) {
                         n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-                        s->append(buf, n);
+                        if (n <= 0 && unmappedMarker && !unmappedMarker->empty()) {
+                            s->append(*unmappedMarker);
+                        } else {
+                            s->append(buf, n);
+                        }
                     }
                     if (u)
                         u[nCols] = text[k];
@@ -261,7 +270,11 @@ static int reorderText(const Unicode *text, int len, const UnicodeMap *uMap, boo
             for (k = i; k > j; --k) {
                 if (s) {
                     n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-                    s->append(buf, n);
+                    if (n <= 0 && unmappedMarker && !unmappedMarker->empty()) {
+                        s->append(*unmappedMarker);
+                    } else {
+                        s->append(buf, n);
+                    }
                 }
                 if (u)
                     u[nCols] = text[k];
@@ -277,7 +290,11 @@ static int reorderText(const Unicode *text, int len, const UnicodeMap *uMap, boo
                 for (k = j + 1; k <= i; ++k) {
                     if (s) {
                         n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-                        s->append(buf, n);
+                        if (n <= 0 && unmappedMarker && !unmappedMarker->empty()) {
+                            s->append(*unmappedMarker);
+                        } else {
+                            s->append(buf, n);
+                        }
                     }
                     if (u)
                         u[nCols] = text[k];
@@ -5308,22 +5325,30 @@ void TextPage::assignColumns(TextLineFrag *frags, int nFrags, bool oneRot) const
 
 int TextPage::dumpFragment(const Unicode *text, int len, const UnicodeMap *uMap, GooString *s) const
 {
-    if (uMap->isUnicode()) {
-        return reorderText(text, len, uMap, primaryLR, s, nullptr);
-    } else {
-        int nCols = 0;
+    int nCols = 0;
+    const std::string unmappedMarker = globalParams->getTextUnmappedMarker();
 
+    if (uMap->isUnicode()) {
+        nCols = reorderText(text, len, uMap, primaryLR, s, nullptr, &unmappedMarker);
+    } else {
         char buf[8];
         int buflen = 0;
 
         for (int i = 0; i < len; ++i) {
             buflen = uMap->mapUnicode(text[i], buf, sizeof(buf));
-            s->append(buf, buflen);
-            nCols += buflen;
+            if (buflen <= 0 && !unmappedMarker.empty()) {
+                s->append(unmappedMarker);
+                nCols += unmappedMarker.size();
+            } else {
+                s->append(buf, buflen);
+                nCols += buflen;
+            }
         }
 
         return nCols;
     }
+
+    return nCols;
 }
 
 #ifdef TEXTOUT_WORD_LIST

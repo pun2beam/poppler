@@ -90,6 +90,7 @@ static bool discardDiag = false;
 static bool htmlMeta = false;
 static char textEncName[128] = "";
 static char textEOLStr[16] = "";
+static char missingMarker[128] = "";
 static bool noPageBreaks = false;
 static char ownerPassword[33] = "\001";
 static char userPassword[33] = "\001";
@@ -113,6 +114,7 @@ static const ArgDesc argDesc[] = { { "-f", argInt, &firstPage, 0, "first page to
                                    { "-enc", argString, textEncName, sizeof(textEncName), "output text encoding name" },
                                    { "-listenc", argFlag, &printEnc, 0, "list available encodings" },
                                    { "-eol", argString, textEOLStr, sizeof(textEOLStr), "output end-of-line convention (unix, dos, or mac)" },
+                                   { "-missing", argString, missingMarker, sizeof(missingMarker), "marker to output for characters that cannot be converted" },
                                    { "-nopgbrk", argFlag, &noPageBreaks, 0, "don't insert page breaks between pages" },
                                    { "-bbox", argFlag, &bbox, 0, "output bounding box for each word and page size to html.  Sets -htmlmeta" },
                                    { "-bbox-layout", argFlag, &bboxLayout, 0, "like -bbox but with extra layout bounding box data.  Sets -htmlmeta" },
@@ -221,6 +223,7 @@ int main(int argc, char *argv[])
     if (quiet) {
         globalParams->setErrQuiet(quiet);
     }
+    globalParams->setTextUnmappedMarker(missingMarker);
 
     // get mapping to output encoding
     if (!(uMap = globalParams->getTextEncoding())) {
