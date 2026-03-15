@@ -113,6 +113,7 @@ public:
     bool getPSExpandSmaller();
     bool getPSShrinkLarger();
     std::string getTextEncodingName() const;
+    std::string getTextUnmappedMarker() const;
     bool getOverprintPreview() { return overprintPreview; }
     bool getPrintCommands();
     bool getProfileCommands();
@@ -132,6 +133,7 @@ public:
     void setPSExpandSmaller(bool expand);
     void setPSShrinkLarger(bool shrink);
     void setTextEncoding(const char *encodingName);
+    void setTextUnmappedMarker(const std::string &marker);
     void setOverprintPreview(bool overprintPreviewA);
     void setPrintCommands(bool printCommandsA);
     void setProfileCommands(bool profileCommandsA);
@@ -182,6 +184,7 @@ private:
     bool psShrinkLarger; // shrink larger pages to fit paper
     GooString *textEncoding; // encoding (unicodeMap) to use for text
                              //   output
+    std::string textUnmappedMarker; // marker to output for unmapped text chars
     bool overprintPreview; // enable overprint preview
     bool printCommands; // print the drawing commands
     bool profileCommands; // profile the drawing commands
