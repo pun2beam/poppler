@@ -195,12 +195,32 @@ inline bool isAscii7(Unicode uchar)
     return uchar < 128;
 }
 
+constexpr Unicode textUnmappedSentinel = 0x110000;
+
+inline void appendMappedUnicode(const UnicodeMap *uMap, Unicode u, GooString *s, const std::string *unmappedMarker)
+{
+    char buf[8];
+    if (u == textUnmappedSentinel) {
+        if (unmappedMarker && !unmappedMarker->empty()) {
+            s->append(*unmappedMarker);
+        }
+        return;
+    }
+
+    const int n = uMap->mapUnicode(u, buf, sizeof(buf));
+    if (n <= 0 && unmappedMarker && !unmappedMarker->empty()) {
+        s->append(*unmappedMarker);
+    } else {
+        s->append(buf, n);
+    }
+}
+
 }
 
 static int reorderText(const Unicode *text, int len, const UnicodeMap *uMap, bool primaryLR, GooString *s, Unicode *u, const std::string *unmappedMarker = nullptr)
 {
-    char lre[8], rle[8], popdf[8], buf[8];
-    int lreLen = 0, rleLen = 0, popdfLen = 0, n;
+    char lre[8], rle[8], popdf[8];
+    int lreLen = 0, rleLen = 0, popdfLen = 0;
     int nCols, i, j, k;
 
     nCols = 0;
@@ -219,12 +239,7 @@ static int reorderText(const Unicode *text, int len, const UnicodeMap *uMap, boo
                 ;
             for (k = i; k < j; ++k) {
                 if (s) {
-                    n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-                    if (n <= 0 && unmappedMarker && !unmappedMarker->empty()) {
-                        s->append(*unmappedMarker);
-                    } else {
-                        s->append(buf, n);
-                    }
+                    appendMappedUnicode(uMap, text[k], s, unmappedMarker);
                 }
                 if (u)
                     u[nCols] = text[k];
@@ -239,12 +254,7 @@ static int reorderText(const Unicode *text, int len, const UnicodeMap *uMap, boo
                     s->append(rle, rleLen);
                 for (k = j - 1; k >= i; --k) {
                     if (s) {
-                        n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-                        if (n <= 0 && unmappedMarker && !unmappedMarker->empty()) {
-                            s->append(*unmappedMarker);
-                        } else {
-                            s->append(buf, n);
-                        }
+                        appendMappedUnicode(uMap, text[k], s, unmappedMarker);
                     }
                     if (u)
                         u[nCols] = text[k];
@@ -269,12 +279,7 @@ static int reorderText(const Unicode *text, int len, const UnicodeMap *uMap, boo
                 ;
             for (k = i; k > j; --k) {
                 if (s) {
-                    n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-                    if (n <= 0 && unmappedMarker && !unmappedMarker->empty()) {
-                        s->append(*unmappedMarker);
-                    } else {
-                        s->append(buf, n);
-                    }
+                    appendMappedUnicode(uMap, text[k], s, unmappedMarker);
                 }
                 if (u)
                     u[nCols] = text[k];
@@ -289,12 +294,7 @@ static int reorderText(const Unicode *text, int len, const UnicodeMap *uMap, boo
                     s->append(lre, lreLen);
                 for (k = j + 1; k <= i; ++k) {
                     if (s) {
-                        n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-                        if (n <= 0 && unmappedMarker && !unmappedMarker->empty()) {
-                            s->append(*unmappedMarker);
-                        } else {
-                            s->append(buf, n);
-                        }
+                        appendMappedUnicode(uMap, text[k], s, unmappedMarker);
                     }
                     if (u)
                         u[nCols] = text[k];
@@ -2811,6 +2811,18 @@ void TextPage::addChar(const GfxState *state, double x, double y, double dx, dou
         for (i = 0; i < uLen; ++i) {
             curWord->addChar(state, curFont, x1 + i * w1, y1 + i * h1, w1, h1, charPos, nBytes, c, u[i], mat);
         }
+    } else {
+        // Some glyphs (e.g. Type3/F3-like vector glyphs) have drawing
+        // commands but no text codepoint mapping. Keep a placeholder so
+        // pdftotext -missing can mark their position in output.
+        if (!curWord) {
+            beginWord(state);
+        }
+        if (discardDiag && diagonal) {
+            charPos += nBytes;
+            return;
+        }
+        curWord->addChar(state, curFont, x1, y1, w1, h1, charPos, nBytes, c, textUnmappedSentinel, mat);
     }
     charPos += nBytes;
 }
